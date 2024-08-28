@@ -1,3 +1,3 @@
-# flower-fine-grained-classification
+# flower-fgvc
 
-Fine grained classification of flowers dataset.
+Fine grained visual classification of flowers dataset.

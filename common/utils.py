@@ -44,7 +44,7 @@ def dump_yaml(ypath, datadict):
 
 def init_config():
     root_dir = os.getcwd()
-    data_dir = os.path.join(root_dir, 'source-data')
+    data_dir = os.path.join(root_dir, 'data')
     op_dir = os.path.join(root_dir, 'output')
     config_path = os.path.join(root_dir, 'config.yaml')
     config_params = read_yaml(config_path)
