@@ -3,8 +3,7 @@ transform:
     crop_dim: 224
 train:
     batch_size: 32
-    k: 3
-    loss: 'l1'
+    loss: 'cross-entropy'
     epoch_interval: 5
     num_epochs: 10
 model:

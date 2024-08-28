@@ -1,6 +1,6 @@
 import torchvision
 
-def get_model(model_name = "resnet18", get_weights = False):
+def get_model(model_name = "resnet18", get_weights = True):
     model = {}
     model_id2name = {}
     if model_name.lower() == "resnet18":
@@ -38,4 +38,11 @@ def get_model(model_name = "resnet18", get_weights = False):
             model_id2name = weights.meta["categories"]
         else:
             model = torchvision.models.vit_b_16()
+    elif model_name.lower() == 'alexnet':
+        if get_weights:
+            weights = torchvision.models.AlexNet_Weights.IMAGENET1K_V1
+            model = torchvision.models.alexnet(weights = weights)
+            model_id2name = weights.meta["categories"]
+        else:
+            model = torchvision.models.alexnet()
     return model, model_id2name
