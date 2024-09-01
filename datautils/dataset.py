@@ -14,7 +14,7 @@ class FlowerDataset(Dataset):
         labels_mat = loadmat(labels_path)
         #id_path = os.path.join(data_dir, 'setid.mat')
         #ids = loadmat(id_path)
-        #print(ids)
+        print(labels_mat)
         self.data_filepaths = data_filepaths
         self.img_dir = img_dir
         self.labels_tensor = torch.from_numpy(labels_mat['labels'][0]).float() - 1
