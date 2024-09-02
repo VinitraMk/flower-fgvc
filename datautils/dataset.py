@@ -31,7 +31,7 @@ class FlowerDataset(Dataset):
         img_tensor = read_image(os.path.join(self.img_dir, fn))
         label = self.labels_tensor[img_idx]
         onehot_label = torch.zeros(self.num_classes, dtype=torch.float)
-        onehot_label[label] = 1.0
+        onehot_label[label] = 1
         soft_label = torch.zeros(self.num_classes, dtype=torch.float)
         
         return {
