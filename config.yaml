@@ -1,5 +1,0 @@
-data_dir: /home/mikasaackerman/projects/ml-projects/flower-fgvc/data
-device: cpu
-output_dir: /home/mikasaackerman/projects/ml-projects/flower-fgvc/output
-root_dir: /home/mikasaackerman/projects/ml-projects/flower-fgvc
-use_gpu: false
