@@ -6,9 +6,7 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-import warnings
-
-warnings.filterwarnings("error")
+from common.utils import get_config
 
 
 def cos_similar(p, q):
@@ -21,19 +19,30 @@ def cos_similar(p, q):
 
 
 class ECCLoss(nn.Module):
-    def __init__(self, num_class, dim):
+    def __init__(self, num_class, dim, text_features = None, alpha = 0.5, device = ""):
         super().__init__()
-        self.feature_table = torch.rand((num_class, dim), requires_grad=False).cuda()
-        self.count = torch.zeros((num_class, 1), requires_grad=False).cuda()
-        self.logit_table = torch.rand((num_class, num_class), requires_grad=False).cuda()
+        cfg = get_config()
+        if device == "":
+            device = cfg['device']
+        self.feature_table = torch.rand((num_class, dim), requires_grad=False).to(device)
+        self.count = torch.zeros((num_class, 1), requires_grad=False).to(device)
+        self.logit_table = torch.rand((num_class, num_class), requires_grad=False).to(device)
         self.num_class = num_class
         self.dim = dim
+        self.text_features = text_features
+        self.alpha = alpha
 
     def forward(self, feature, logits, targets):
         feature_copy = feature.clone().detach()
         logit_copy = logits.clone().detach()
         for i, index in enumerate(targets, start=0):
-            self.feature_table[index] = self.feature_table[index] * self.count[index].expand(self.dim) + feature_copy[i]
+            if self.text_features != None:
+                vis_feat = self.alpha * self.feature_table[index]
+                text_feat = (1 - self.alpha) * self.text_features[index]
+                #self.feature_table[index] = self.feature_table[index] * self.count[index].expand(self.dim) + feature_copy[i]
+                self.feature_table[index] = (vis_feat + text_feat) * self.count[index].expand(self.dim) + feature_copy[i]
+            else:
+                self.feature_table[index] = self.feature_table[index] * self.count[index].expand(self.dim) + feature_copy[i]
             self.logit_table[index] = self.logit_table[index] * self.count[index].expand(self.num_class) + logit_copy[i]
 
             self.count[index] = self.count[index] + 1

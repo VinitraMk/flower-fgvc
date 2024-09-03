@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 from models.ots_models import get_model
 import torchvision.transforms as transforms
-from common.utils import get_transforms, convert_to_grascale
+from common.utils import get_transforms, convert_to_grascale, get_exp_params
 
 def layer_visualizer(img, args):
 
@@ -45,4 +45,26 @@ def layer_visualizer(img, args):
         plt.imshow(rescaled_img)
         plt.show()
 
-        
+class Visualization:
+
+    def __init__(self, model_info, model_history = {}):
+        self.exp_params = get_exp_params()
+        num_epochs = self.exp_params['train']['num_epochs']
+        self.bestm_tlh = model_info['trlosshistory'][-num_epochs:]
+        self.bestm_vlh = model_info['vallosshistory'][-num_epochs:]
+        self.model_history = model_history if model_history != {} else None
+
+    def __plot_loss_history(self):
+        num_epochs = self.exp_params["train"]["num_epochs"]
+        plt.clf()
+        print("\nModel results\n\n")
+        plt.plot(list(range(num_epochs)), self.bestm_tlh, color="red", label="Best model training loss history")
+        plt.plot(list(range(num_epochs)), self.bestm_vlh, color="orange", label="Best model validation loss history")
+        plt.title("Model loss history")
+        plt.legend()
+        plt.show()
+
+    def get_results(self):
+        self.__plot_loss_history()
+
+ 
