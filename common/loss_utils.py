@@ -42,6 +42,7 @@ class ECCLoss(nn.Module):
                 #self.feature_table[index] = self.feature_table[index] * self.count[index].expand(self.dim) + feature_copy[i]
                 self.feature_table[index] = (vis_feat + text_feat) * self.count[index].expand(self.dim) + feature_copy[i]
             else:
+                #print('feature size', feature_copy[i].size())
                 self.feature_table[index] = self.feature_table[index] * self.count[index].expand(self.dim) + feature_copy[i]
             self.logit_table[index] = self.logit_table[index] * self.count[index].expand(self.num_class) + logit_copy[i]
 

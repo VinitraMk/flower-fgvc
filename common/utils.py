@@ -141,7 +141,7 @@ def save_experiment_output(model, chkpt_info, is_chkpoint = True):
     save_model_chkpt(model, model_info, is_chkpoint)
 
 
-def get_saved_model(model, model_filename, is_chkpt = True):
+def get_saved_model(model, is_chkpt = True):
     cfg = get_config()
     if is_chkpt:
         model_dict = load_model(os.path.join(cfg["root_dir"], "models/checkpoints/curr_model.pt"))

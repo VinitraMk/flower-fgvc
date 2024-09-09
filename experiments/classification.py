@@ -1,7 +1,7 @@
 
 from models.custom_models import get_model
 import torch
-from common.utils import get_exp_params, get_config, save_experiment_output, save_model_helpers, save_model_chkpt
+from common.utils import get_exp_params, get_config, save_experiment_output, save_model_helpers, save_model_chkpt, get_saved_model, get_modelinfo
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 import os
@@ -39,9 +39,11 @@ class Classification:
         else:
             raise SystemExit("Error: no valid loss function name passed! Check run.yaml")
 
-    def __save_model_checkpoint(self, model_state, optimizer_state, chkpt_info):
-        save_experiment_output(model_state, chkpt_info, False)
-        save_model_helpers(optimizer_state, True)
+    def __save_model_checkpoint(self, model_state, chkpt_info, is_chkpoint = True):
+        if is_chkpoint:
+            save_experiment_output(model_state, chkpt_info, True)
+        else:
+            save_experiment_output(model_state, chkpt_info, False)
         #os.remove(os.path.join(self.root_dir, "models/checkpoints/current_model.pt"))
 
     def __get_clip_features4classes(self):
@@ -65,21 +67,29 @@ class Classification:
 
 
 
-    def __conduct_training(self, model, optimizer, train_loader, val_loader, tr_len, val_len):
+    def __conduct_training(self, model, optimizer, train_loader, val_loader,
+        tr_len, val_len, model_info = None):
         num_epochs = self.exp_params['train']['num_epochs']
         epoch_interval = self.exp_params['train']['epoch_interval']
-        
+
+        if model_info == None:
+            trlosshistory, vallosshistory, valacchistory = [], [], []
+            epoch_arr = list(range(0, num_epochs))
+        else:
+            trlosshistory, vallosshistory, valacchistory = model_info['trlosshistory'],
+            model_info['vallosshistory'], model_info['valacchistory']
+            last_epoch = model_info['last_epoch']
+            epoch_arr = list(range(last_epoch + 1, num_epochs))
+
         self.text_features = self.__get_clip_features4classes().to(self.device)
         ce_loss_fn = self.__loss_fn()
         loss_fn = self.__loss_fn(self.exp_params['train']['loss'])
-        trlosshistory, vallosshistory, valacchistory = [], [], []
-        print('text features size', self.text_features.size(), '\n')
+        #print('text features size', self.text_features.size(), '\n')
         scheduler = StepLR(optimizer,
             step_size = self.exp_params['train']['lr_step'],
             gamma = self.exp_params['train']['lr_decay'])
 
-        for epoch in range(num_epochs):
-
+        for epoch in epoch_arr:
             model.train()
             tr_loss, val_loss, val_acc = 0.0, 0.0, 0.0
             ratio = (epoch + 1) / num_epochs
@@ -99,7 +109,6 @@ class Classification:
                 tr_loss += loss.item()
             if self.exp_params['train']['enable_lr_decay']:
                 scheduler.step()
-
 
             tr_loss /= tr_len
             trlosshistory.append(tr_loss)
@@ -129,18 +138,38 @@ class Classification:
                 print(f'\tEpoch {epoch} Training Loss: {tr_loss}')
                 print(f"\tEpoch {epoch} Validation Loss: {val_loss}\n")
 
+            model_info = {
+                'trlosshistory': trlosshistory,
+                'vallosshistory': vallosshistory,
+                'valacchistory': valacchistory,
+                'last_epoch': epoch
+            }
+
+            self.__save_model_checkpoint(
+                model,
+                model_info
+            )
+
         model_info = {
             'trlosshistory': trlosshistory,
             'vallosshistory': vallosshistory,
             'valacchistory': valacchistory,
             'last_epoch': -1
         }
-        self.__save_model_checkpoint(model, optimizer, model_info)
+        self.__save_model_checkpoint(model, model_info)
+
+    def __get_model(self, model_name):
+        model = get_model(102, model_name)
+        if os.path.exists('./models/checkpoints/curr_model.pt'):
+            model = get_saved_model(model, True)
+            model_info = get_modelinfo(True)
+            return model, model_info
+        return model, None
 
 
     def run_fgvc_pipeline(self):
         model_name = self.model_params['name']
-        model = get_model(102, model_name)
+        model, model_info = self.__get_model(model_name)
         self.dim = model.dim
         optimizer = torch.optim.Adam(model.parameters(),
             lr = self.model_params['lr'],

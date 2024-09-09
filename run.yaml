@@ -5,19 +5,19 @@ train:
     batch_size: 64
     loss: 'ecc'
     epoch_interval: 2
-    num_epochs: 20
-    lamda1: 0.1
-    lamda2: 0.08
+    num_epochs: 10
+    lamda1: 0.01
+    lamda2: 1.2
     enable_lr_decay: False
     lr_step: 10
     lr_decay: 0.1
     ecc_alpha: 0.5
     shared_space_numfeats: 4096
 model:
-    name: 'alexnet'
+    name: 'resnet18'
     optimizer: 'Adam'
     lr: 0.00001
-    weight_decay: 0.0000001
+    weight_decay: 0.00001
     amsgrad: True
     momentum: 0.8
     build_on_pretrained: False
