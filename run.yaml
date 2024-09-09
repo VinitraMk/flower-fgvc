@@ -4,7 +4,7 @@ transform:
 train:
     batch_size: 64
     loss: 'ecc'
-    epoch_interval: 2
+    epoch_interval: 1
     num_epochs: 10
     lamda1: 0.01
     lamda2: 1.2
@@ -23,4 +23,4 @@ model:
     build_on_pretrained: False
     pretrained_filename: '/models/checkpoints/last_model.pt'
 dataset:
-    size: 'full'
+    size: 'subset'

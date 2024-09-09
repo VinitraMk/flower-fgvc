@@ -13,6 +13,7 @@ class Classification:
 
     def __init__(self, train_dataset, val_dataset):
         cfg = get_config()
+        self.root_dir = cfg['root_dir']
         self.data_dir = cfg['data_dir']
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
@@ -160,7 +161,10 @@ class Classification:
 
     def __get_model(self, model_name):
         model = get_model(102, model_name)
-        if os.path.exists('./models/checkpoints/curr_model.pt'):
+        model_chkpt_path = os.path.join(self.root_dir, 'models/checkpoints/curr_model.pt')
+        print('model chkpt path', model_chkpt_path)
+        if os.path.exists(model_chkpt_path):
+            print('Loading saved model..')
             model = get_saved_model(model, True)
             model_info = get_modelinfo(True)
             return model, model_info
