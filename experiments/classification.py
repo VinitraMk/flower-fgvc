@@ -82,20 +82,21 @@ class Classification:
 
             model.train()
             tr_loss, val_loss, val_acc = 0.0, 0.0, 0.0
+            ratio = (epoch + 1) / num_epochs
 
             for _, batch in enumerate(tqdm(train_loader, desc = '\t\tRunning through training set', position = 0, leave = True, disable = True)):
                 optimizer.zero_grad()
                 imgs = batch['img'].float().to(self.device)
                 olabels = batch['olabel'].to(self.device)
-                lbls = batch['label'].to(self.device)
+                lbls = batch['label'].type(torch.LongTensor).to(self.device)
                 op,feats = model(imgs)
                 #print('op sz', op.size(), olabels.size(), batch['label'].size(), feats.size())
-                celoss = ce_loss_fn(op, olabels)
+                celoss = ce_loss_fn(op, lbls) * imgs.size(0)
                 mcc, clg, _, _ = loss_fn(feats, op, lbls)
-                loss = celoss + (self.lamda1 * mcc) + (self.lamda2 * clg)
+                loss = celoss + (ratio * self.lamda1 * mcc) + (ratio * self.lamda2 * clg)
                 loss.backward()
                 optimizer.step()
-                tr_loss += (loss.item() * imgs.size(0))
+                tr_loss += loss.item()
             if self.exp_params['train']['enable_lr_decay']:
                 scheduler.step()
 
@@ -108,13 +109,13 @@ class Classification:
             for _, batch in enumerate(tqdm(val_loader, desc = '\t\tRunning through validation set', position = 0, leave = True, disable = True)):
                 imgs = batch['img'].float().to(self.device)
                 olabels = batch['olabel'].to(self.device)
-                lbls = batch['label'].to(self.device)
+                lbls = batch['label'].type(torch.LongTensor).to(self.device)
                 op, feats = model(imgs)
-                celoss = ce_loss_fn(op, olabels)
+                celoss = ce_loss_fn(op, lbls) * imgs.size(0)
                 mcc, clg, _, _ = loss_fn(feats, op, lbls)
-                loss = celoss + (self.lamda1 * mcc) + (self.lamda2 * clg)
+                loss = celoss + (self.lamda1 * mcc * ratio) + (self.lamda2 * clg * ratio)
                 #loss = loss_fn(op, olabels)
-                val_loss += (loss.item() * imgs.size(0))
+                val_loss += loss.item()
                 pred_label = torch.argmax(op, 1)
                 #print('label size', correct_label.size(), pred_label.size())
                 val_acc += (lbls == pred_label).sum()
@@ -157,3 +158,6 @@ class Classification:
         self.__conduct_training(model, optimizer, train_loader, val_loader, tr_len, val_len)
 
         torch.cuda.empty_cache()
+
+
+
