@@ -96,10 +96,10 @@ def save_model_chkpt(model, chkpt_info, is_checkpoint = True):
     else:
         fpath = os.path.join(config_params['root_dir'], 'models/checkpoints')
         chkpt_filename = 'last_model'
-        chkpt_filepath = os.path.join(config_params['root_dir'], 'models/checkpoints/curr_model.pt')
-        if os.path.exists(chkpt_filepath):
-            os.remove(os.path.join(config_params['root_dir'], 'models/checkpoints/curr_model.pt'))
-            os.remove(os.path.join(config_params['root_dir'], 'models/checkpoints/curr_model.json'))
+    chkpt_filepath = os.path.join(config_params['root_dir'], f"models/checkpoints/curr_model.pt")
+    if os.path.exists(chkpt_filepath):
+        os.remove(os.path.join(config_params['root_dir'], f'models/checkpoints/curr_model.pt'))
+        os.remove(os.path.join(config_params['root_dir'], f'models/checkpoints/curr_model.json'))
     
     mpath = os.path.join(fpath, f'{chkpt_filename}.pt')
     jpath = os.path.join(fpath, f'{chkpt_filename}.json')
