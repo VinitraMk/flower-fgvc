@@ -167,15 +167,27 @@ class Classification:
             return model, model_info
         return model, None
 
+    def __get_optimizer(self, optimizer_name, model):
+        if optimizer_name == 'adam':
+            optimizer = torch.optim.Adam(model.parameters(),
+                lr = self.model_params['lr'],
+                weight_decay = self.model_params['weight_decay'],
+                amsgrad = self.model_params['amsgrad'])
+            return optimizer
+        elif optimizer_name == 'sgd':
+            optimizer = torch.optim.SGD(model.parameters(),
+            lr = self.model_params['lr'],
+            weight_decay = self.model_params['weight_decay'],
+            nesterov = False)
+            return optimizer
+        else:
+            raise SystemExit("Error: no valid optimizer name passed! Check run.yaml")
 
     def run_fgvc_pipeline(self):
         model_name = self.model_params['name']
         model, model_info = self.__get_model(model_name)
         self.dim = model.dim
-        optimizer = torch.optim.Adam(model.parameters(),
-            lr = self.model_params['lr'],
-            weight_decay = self.model_params['weight_decay'],
-            amsgrad = self.model_params['amsgrad'])
+        optimizer = self.__get_optimizer(self.model_params['optimizer'], model)
         batch_size = self.exp_params['train']['batch_size']
 
         train_loader = DataLoader(self.train_dataset, batch_size = batch_size, shuffle = False)

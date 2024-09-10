@@ -5,7 +5,7 @@ train:
     batch_size: 64
     loss: 'ecc'
     epoch_interval: 10
-    num_epochs: 75
+    num_epochs: 150
     lamda1: 0.01
     lamda2: 1.2
     enable_lr_decay: False
@@ -15,7 +15,7 @@ train:
     shared_space_numfeats: 4096
 model:
     name: 'resnet18'
-    optimizer: 'Adam'
+    optimizer: 'sgd'
     lr: 0.00001
     weight_decay: 0.00001
     amsgrad: True
@@ -23,4 +23,4 @@ model:
     build_on_pretrained: False
     pretrained_filename: '/models/checkpoints/last_model.pt'
 dataset:
-    size: 'full'
+    size: 'subset'
