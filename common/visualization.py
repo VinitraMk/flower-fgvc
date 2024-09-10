@@ -62,9 +62,13 @@ class Visualization:
         plt.plot(list(range(num_epochs)), self.bestm_vlh, color="orange", label="Best model validation loss history")
         plt.title("Model loss history")
         plt.legend()
+        plt.savefig('./output/loss_history.png')
         plt.show()
+
 
     def get_results(self):
         self.__plot_loss_history()
+
+ 
 
  
