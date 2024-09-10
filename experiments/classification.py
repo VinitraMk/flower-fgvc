@@ -13,8 +13,8 @@ class Classification:
 
     def __init__(self, train_dataset, val_dataset):
         cfg = get_config()
-        self.root_dir = cfg['root_dir']
         self.data_dir = cfg['data_dir']
+        self.root_dir = cfg['root_dir']
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
         #self.test_dataset = test_dataset
@@ -41,10 +41,7 @@ class Classification:
             raise SystemExit("Error: no valid loss function name passed! Check run.yaml")
 
     def __save_model_checkpoint(self, model_state, chkpt_info, is_chkpoint = True):
-        if is_chkpoint:
-            save_experiment_output(model_state, chkpt_info, True)
-        else:
-            save_experiment_output(model_state, chkpt_info, False)
+        save_experiment_output(model_state, chkpt_info, is_chkpoint)
         #os.remove(os.path.join(self.root_dir, "models/checkpoints/current_model.pt"))
 
     def __get_clip_features4classes(self):
@@ -63,7 +60,7 @@ class Classification:
                 outputs = model.get_text_features(**inputs)
             outputs = outputs / outputs.norm(p = 2, dim = -1, keepdim = True)
             outputs = outputs.cpu()
-            text_features[i] = outputs 
+            text_features[i] = outputs
         return text_features
 
 
@@ -77,8 +74,9 @@ class Classification:
             trlosshistory, vallosshistory, valacchistory = [], [], []
             epoch_arr = list(range(0, num_epochs))
         else:
-            trlosshistory, vallosshistory, valacchistory = model_info['trlosshistory'],
-            model_info['vallosshistory'], model_info['valacchistory']
+            trlosshistory = model_info['trlosshistory']
+            vallosshistory = model_info['vallosshistory']
+            valacchistory =  model_info['valacchistory']
             last_epoch = model_info['last_epoch']
             epoch_arr = list(range(last_epoch + 1, num_epochs))
 
@@ -90,7 +88,7 @@ class Classification:
             step_size = self.exp_params['train']['lr_step'],
             gamma = self.exp_params['train']['lr_decay'])
 
-        for epoch in epoch_arr:
+        for ei, epoch in enumerate(epoch_arr):
             model.train()
             tr_loss, val_loss, val_acc = 0.0, 0.0, 0.0
             ratio = (epoch + 1) / num_epochs
@@ -135,7 +133,7 @@ class Classification:
             vallosshistory.append(val_loss)
             valacchistory.append(val_acc.item())
 
-            if epoch % epoch_interval == 0:
+            if epoch % epoch_interval == 0 or ei == 0:
                 print(f'\tEpoch {epoch} Training Loss: {tr_loss}')
                 print(f"\tEpoch {epoch} Validation Loss: {val_loss}\n")
 
@@ -157,14 +155,13 @@ class Classification:
             'valacchistory': valacchistory,
             'last_epoch': -1
         }
-        self.__save_model_checkpoint(model, model_info)
+        self.__save_model_checkpoint(model, model_info, False)
 
     def __get_model(self, model_name):
         model = get_model(102, model_name)
         model_chkpt_path = os.path.join(self.root_dir, 'models/checkpoints/curr_model.pt')
-        print('model chkpt path', model_chkpt_path)
         if os.path.exists(model_chkpt_path):
-            print('Loading saved model..')
+            print('Loading saved model...')
             model = get_saved_model(model, True)
             model_info = get_modelinfo(True)
             return model, model_info
@@ -188,7 +185,7 @@ class Classification:
 
         print('Training of classifier...\n')
 
-        self.__conduct_training(model, optimizer, train_loader, val_loader, tr_len, val_len)
+        self.__conduct_training(model, optimizer, train_loader, val_loader, tr_len, val_len, model_info)
 
         torch.cuda.empty_cache()
 
