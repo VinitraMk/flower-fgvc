@@ -40,8 +40,8 @@ class Classification:
         else:
             raise SystemExit("Error: no valid loss function name passed! Check run.yaml")
 
-    def __save_model_checkpoint(self, model_state, chkpt_info, is_chkpoint = True):
-        save_experiment_output(model_state, chkpt_info, is_chkpoint)
+    def __save_model_checkpoint(self, model, chkpt_info, optimizer, is_chkpoint = True):
+        save_experiment_output(model, chkpt_info, optimizer, is_chkpoint)
         #os.remove(os.path.join(self.root_dir, "models/checkpoints/current_model.pt"))
 
     def __get_clip_features4classes(self):
@@ -146,7 +146,8 @@ class Classification:
 
             self.__save_model_checkpoint(
                 model,
-                model_info
+                model_info,
+                optimizer
             )
 
         model_info = {
@@ -155,7 +156,7 @@ class Classification:
             'valacchistory': valacchistory,
             'last_epoch': -1
         }
-        self.__save_model_checkpoint(model, model_info, False)
+        self.__save_model_checkpoint(model, model_info, None, False)
 
     def __get_model(self, model_name):
         model = get_model(102, model_name)
@@ -167,19 +168,27 @@ class Classification:
             return model, model_info
         return model, None
 
+    def __get_saved_optimizer(self, optimizer):
+        opath = os.path.join(self.root_dir, 'models/checkpoints/curr_model_optimizer.pt')
+        if os.path.exists(opath):
+            print('Loading saved optimizer state...')
+            optimizer_state = torch.load(opath, map_location = torch.device(self.device))
+            optimizer.load_state_dict(optimizer_state)
+        return optimizer
+
     def __get_optimizer(self, optimizer_name, model):
         if optimizer_name == 'adam':
             optimizer = torch.optim.Adam(model.parameters(),
                 lr = self.model_params['lr'],
                 weight_decay = self.model_params['weight_decay'],
                 amsgrad = self.model_params['amsgrad'])
-            return optimizer
+            return self.__get_saved_optimizer(optimizer)
         elif optimizer_name == 'sgd':
             optimizer = torch.optim.SGD(model.parameters(),
             lr = self.model_params['lr'],
             weight_decay = self.model_params['weight_decay'],
             nesterov = False)
-            return optimizer
+            return self.__get_saved_optimizer(optimizer)
         else:
             raise SystemExit("Error: no valid optimizer name passed! Check run.yaml")
 

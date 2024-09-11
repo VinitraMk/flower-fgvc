@@ -131,15 +131,15 @@ def get_model_filename(model_name):
     fname = f'{model_name}_{nowstr}'
     return fname
 
-def save_experiment_output(model, chkpt_info, is_chkpoint = True):
-    model_info = {
-        'trlosshistory': chkpt_info['trlosshistory'],
-        'vallosshistory': chkpt_info['vallosshistory'],
-        'valacchistory': chkpt_info['valacchistory'],
-        'last_epoch': chkpt_info['last_epoch']
-    }
-    save_model_chkpt(model, model_info, is_chkpoint)
-
+def save_experiment_output(model, chkpt_info, optimizer = None, is_chkpoint = True):
+    save_model_chkpt(model, chkpt_info, is_chkpoint)
+    cfg = get_config()
+    if optimizer != None:
+        save_model_helpers(optimizer.state_dict())
+    else:
+        opath = os.path.join(cfg["root_dir"], 'models/checkpoints/curr_model_optimizer.pt')
+        if os.path.exists(opath):
+            os.remove(opath)
 
 def get_saved_model(model, is_chkpt = True):
     cfg = get_config()
