@@ -91,7 +91,7 @@ class Classification:
             gamma = self.exp_params['train']['lr_decay'])
 
         if prev_loss != -1:
-            print('\n\nPrevious loss:', prev_loss)
+            print('\nPrevious loss:', prev_loss, '\n')
 
         disable_tqdm_log = True
 
