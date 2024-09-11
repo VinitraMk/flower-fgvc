@@ -4,7 +4,7 @@ transform:
 train:
     batch_size: 64
     loss: 'ecc'
-    epoch_interval: 5
+    epoch_interval: 10
     num_epochs: 30
     lamda1: 0.01
     lamda2: 1.2

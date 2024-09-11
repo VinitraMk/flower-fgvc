@@ -72,11 +72,13 @@ class Classification:
 
         if model_info == None:
             trlosshistory, vallosshistory, valacchistory = [], [], []
+            prev_loss = -1
             epoch_arr = list(range(0, num_epochs))
         else:
             trlosshistory = model_info['trlosshistory']
             vallosshistory = model_info['vallosshistory']
             valacchistory =  model_info['valacchistory']
+            prev_loss = trlosshistory[-1]
             last_epoch = model_info['last_epoch']
             epoch_arr = list(range(last_epoch + 1, num_epochs))
 
@@ -88,12 +90,22 @@ class Classification:
             step_size = self.exp_params['train']['lr_step'],
             gamma = self.exp_params['train']['lr_decay'])
 
+        if prev_loss != -1:
+            print('\n\nPrevious loss:', prev_loss)
+
+        disable_tqdm_log = True
+
         for ei, epoch in enumerate(epoch_arr):
+
+            if (epoch % epoch_interval == 0) or ei == 0:
+                print(f'\tRunning Epoch {epoch}')
+                disable_tqdm_log = False
+
             model.train()
             tr_loss, val_loss, val_acc = 0.0, 0.0, 0.0
             ratio = (epoch + 1) / num_epochs
 
-            for _, batch in enumerate(tqdm(train_loader, desc = '\t\tRunning through training set', position = 0, leave = True, disable = True)):
+            for _, batch in enumerate(tqdm(train_loader, desc = '\t\tRunning through training set', position = 0, leave = True, disable = disable_tqdm_log)):
                 optimizer.zero_grad()
                 imgs = batch['img'].float().to(self.device)
                 olabels = batch['olabel'].to(self.device)
@@ -114,7 +126,7 @@ class Classification:
 
             model.eval()
 
-            for _, batch in enumerate(tqdm(val_loader, desc = '\t\tRunning through validation set', position = 0, leave = True, disable = True)):
+            for _, batch in enumerate(tqdm(val_loader, desc = '\t\tRunning through validation set', position = 0, leave = True, disable = disable_tqdm_log)):
                 imgs = batch['img'].float().to(self.device)
                 olabels = batch['olabel'].to(self.device)
                 lbls = batch['label'].type(torch.LongTensor).to(self.device)
@@ -149,6 +161,7 @@ class Classification:
                 model_info,
                 optimizer
             )
+            disable_tqdm_log = True
 
         model_info = {
             'trlosshistory': trlosshistory,
@@ -158,15 +171,21 @@ class Classification:
         }
         self.__save_model_checkpoint(model, model_info, None, False)
 
-    def __get_model(self, model_name):
-        model = get_model(102, model_name)
-        model_chkpt_path = os.path.join(self.root_dir, 'models/checkpoints/curr_model.pt')
-        if os.path.exists(model_chkpt_path):
-            print('Loading saved model...')
-            model = get_saved_model(model, True)
-            model_info = get_modelinfo(True)
-            return model, model_info
-        return model, None
+    def __get_optimizer(self, optimizer_name, model):
+        if optimizer_name == 'adam':
+            optimizer = torch.optim.Adam(model.parameters(),
+                lr = self.model_params['lr'],
+                weight_decay = self.model_params['weight_decay'],
+                amsgrad = self.model_params['amsgrad'])
+            return optimizer
+        elif optimizer_name == 'sgd':
+            optimizer = torch.optim.SGD(model.parameters(),
+            lr = self.model_params['lr'],
+            weight_decay = self.model_params['weight_decay'],
+            nesterov = False)
+            return optimizer
+        else:
+            raise SystemExit("Error: no valid optimizer name passed! Check run.yaml")
 
     def __get_saved_optimizer(self, optimizer):
         opath = os.path.join(self.root_dir, 'models/checkpoints/curr_model_optimizer.pt')
@@ -176,27 +195,23 @@ class Classification:
             optimizer.load_state_dict(optimizer_state)
         return optimizer
 
-    def __get_optimizer(self, optimizer_name, model):
-        if optimizer_name == 'adam':
-            optimizer = torch.optim.Adam(model.parameters(),
-                lr = self.model_params['lr'],
-                weight_decay = self.model_params['weight_decay'],
-                amsgrad = self.model_params['amsgrad'])
-            return self.__get_saved_optimizer(optimizer)
-        elif optimizer_name == 'sgd':
-            optimizer = torch.optim.SGD(model.parameters(),
-            lr = self.model_params['lr'],
-            weight_decay = self.model_params['weight_decay'],
-            nesterov = False)
-            return self.__get_saved_optimizer(optimizer)
-        else:
-            raise SystemExit("Error: no valid optimizer name passed! Check run.yaml")
+    def __get_model_and_optimizer(self, model_name, optimizer_name):
+        model = get_model(102, model_name)
+        optimizer = self.__get_optimizer(optimizer_name, model)
+        mpath = os.path.join(self.root_dir, 'models/checkpoints/curr_model.pt')
+        if os.path.exists(mpath):
+            print('Loading saved model...')
+            model = get_saved_model(model, True)
+            model_info = get_modelinfo(True)
+            optimizer = self.__get_saved_optimizer(optimizer)
+            return model, model_info, optimizer
+        return model, None, optimizer
 
     def run_fgvc_pipeline(self):
         model_name = self.model_params['name']
-        model, model_info = self.__get_model(model_name)
+        optimizer_name = self.model_params['optimizer']
+        model, model_info, optimizer = self.__get_model_and_optimizer(model_name, optimizer_name)
         self.dim = model.dim
-        optimizer = self.__get_optimizer(self.model_params['optimizer'], model)
         batch_size = self.exp_params['train']['batch_size']
 
         train_loader = DataLoader(self.train_dataset, batch_size = batch_size, shuffle = False)
@@ -209,6 +224,8 @@ class Classification:
         self.__conduct_training(model, optimizer, train_loader, val_loader, tr_len, val_len, model_info)
 
         torch.cuda.empty_cache()
+
+
 
 
 

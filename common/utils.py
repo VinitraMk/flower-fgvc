@@ -141,15 +141,25 @@ def save_experiment_output(model, chkpt_info, optimizer = None, is_chkpoint = Tr
         if os.path.exists(opath):
             os.remove(opath)
 
+def get_saved_custom_model(model, is_chkpt = True):
+    cfg = get_config()
+    if is_chkpt:
+        model_dict = load_model(os.path.join(cfg["root_dir"], "models/checkpoints/curr_model.pt"))
+    else:
+        model_dict = load_model(os.path.join(cfg["root_dir"], f"models/checkpoints/last_model.pt"))
+
+    model_state = model.state_dict()
+    for key in model_dict:
+        model_state[key] = model_dict[key]
+    return model
+
 def get_saved_model(model, is_chkpt = True):
     cfg = get_config()
     if is_chkpt:
         model_dict = load_model(os.path.join(cfg["root_dir"], "models/checkpoints/curr_model.pt"))
     else:
         model_dict = load_model(os.path.join(cfg["root_dir"], f"models/checkpoints/last_model.pt"))
-    model_state = model.state_dict()
-    for key in model_dict:
-        model_state[key] = model_dict[key]
+    model.load_state_dict(model_dict)
     return model
 
 def save_model_helpers(optimizer_state, is_chkpt = True):
